@@ -1,56 +1,41 @@
-async function fetchDNSRecords() {
-    const domain = document.getElementById('domainInput').value;
-    const output = document.getElementById('output');
-    const dkimSelector = document.getElementById('dkimSelector').value || 'selector1';
-    output.textContent = 'Fetching DNS records...\n';
-
-    const recordTypes = ['A', 'AAAA', 'CNAME', 'MX', 'TXT', 'NS', 'SOA'];
-    
-    for (const type of recordTypes) {
-        try {
-            const response = await fetch(`https://dns.google/resolve?name=${domain}&type=${type}`);
-            const data = await response.json();
-            output.textContent += `\n${type} Records:\n`;
-            if (data.Answer) {
-                data.Answer.forEach(record => {
-                    output.textContent += `${record.name} ${record.TTL} IN ${type} ${record.data}\n`;
-                });
-            } else {
-                output.textContent += 'No records found.\n';
-            }
-        } catch (error) {
-            output.textContent += `Error fetching ${type} records: ${error}\n`;
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DNS Lookup Tool</title>
+    <style>
+        body {
+            background-color: black;
+            color: #00FF00;
+            font-family: monospace;
         }
-    }
-
-    // Check for SPF, DMARC, BIMI, and DKIM records
-    await checkSpecialRecords(domain, dkimSelector, output);
-}
-
-async function checkSpecialRecords(domain, dkimSelector, output) {
-    const specialRecords = [
-        { name: 'SPF', lookup: domain },
-        { name: 'DMARC', lookup: `_dmarc.${domain}` },
-        { name: 'BIMI', lookup: `default._bimi.${domain}` },
-        { name: 'DKIM', lookup: `${dkimSelector}._domainkey.${domain}` }
-    ];
-
-    for (const record of specialRecords) {
-        try {
-            const response = await fetch(`https://dns.google/resolve?name=${record.lookup}&type=TXT`);
-            const data = await response.json();
-            output.textContent += `\n${record.name} Record:\n`;
-            if (data.Answer) {
-                data.Answer.forEach(ans => {
-                    if (ans.data.includes(record.name.toLowerCase()) || record.name === 'DKIM') {
-                        output.textContent += `${ans.data}\n`;
-                    }
-                });
-            } else {
-                output.textContent += 'No record found.\n';
-            }
-        } catch (error) {
-            output.textContent += `Error fetching ${record.name} record: ${error}\n`;
+        .terminal {
+            padding: 20px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
         }
-    }
-}
+        input, button {
+            background-color: #003300;
+            color: #00FF00;
+            border: 1px solid #00FF00;
+            padding: 5px;
+            margin: 5px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="terminal">
+        <h1>DNS Lookup Tool</h1>
+        <input type="text" id="domainInput" placeholder="Enter domain name" />
+        <button onclick="fetchDNSRecords()">Lookup</button>
+        <div id="output"></div>
+        <div>
+            <p>DKIM Disclaimer: Using default M365 selector 'selector1' for DKIM lookup.</p>
+            <label for="dkimSelector">DKIM Selector (optional):</label>
+            <input type="text" id="dkimSelector" placeholder="Enter DKIM selector" />
+        </div>
+    </div>
+    <script src="dns-lookup.js"></script>
+</body>
+</html>
